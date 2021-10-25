@@ -1,25 +1,48 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import Router from "./routes";
+import { PostsContext } from "./PostsContext";
+import moment from "moment";
 
-function App() {
+import { getPosts } from "./api";
+
+const App = () => {
+  const [posts, setPosts] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+
+  const fetchPosts = () => {
+    getPosts().then((res) => {
+      let arr = [];
+      for (let item of res.data) {
+        item.posted = moment(new Date(item.timestamp)).fromNow();
+        arr.push(item);
+      }
+      let currentPosts = res.data;
+      currentPosts.sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+      setPosts(currentPosts);
+    });
+  };
+
+  const triggerSync = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      fetchPosts();
+      setSyncing(false);
+    }, 20000);
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <PostsContext.Provider
+      value={{ posts, setPosts, syncing, setSyncing, triggerSync }}
+    >
+      <Router />
+    </PostsContext.Provider>
   );
-}
+};
 
 export default App;
